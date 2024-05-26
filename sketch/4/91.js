@@ -21,21 +21,23 @@ export function sketch() {
 
     const p = {
         // cloth
-        clothWidth: 10,
-        clothHeight: 10,
-        clothResolution: 22,
+        clothWidth: 8,
+        clothHeight: 8,
+        clothResolution: 24,
+        clothElasticity: 1,
         // view
-        lookAtCenter: new THREE.Vector3(0, 5, 3),
-        cameraPosition: new THREE.Vector3(0, 1, - 7 - Math.random() * 25),
-        autoRotate: false,
-        autoRotateSpeed: -1 + Math.random() * 2,
+        lookAtCenter: new THREE.Vector3(0, 6, 0),
+        cameraPosition: new THREE.Vector3(0, 2 + Math.random() * 2, -20 - Math.random() * 5),
+        autoRotate: true,
+        autoRotateSpeed: -1 + Math.random() * 1,
         camera: 35,
         // world
         background: new THREE.Color(0x000000),
-        clothMass: 1,
-        gravity: -18,
+        clothMass: 3,
+        gravity: 0,
         wind: true,
-        windStrength: 2 + Math.random() * 8,
+        windStrength: 1,
+        mouse: false,
         floor: -2,
     };
 
@@ -101,8 +103,8 @@ export function sketch() {
     controls.dampingFactor = 0.05;
     controls.minDistance = 5;
     controls.maxDistance = 40;
-    controls.maxPolarAngle = Math.PI / 2 + 0.2;
-    controls.minPolarAngle = Math.PI / 2 - 0.4;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.minPolarAngle = 0;
     controls.autoRotate = p.autoRotate;
     controls.autoRotateSpeed = p.autoRotateSpeed;
     controls.target = p.lookAtCenter;
@@ -138,7 +140,7 @@ export function sketch() {
         const particleA = clothParticles[x1][y1];
         const particleB = clothParticles[x2][y2];
         const distance = particleA.position.distanceTo(particleB.position);
-        const constraint = new CANNON.DistanceConstraint(particleA, particleB, distance);
+        const constraint = new CANNON.DistanceConstraint(particleA, particleB, distance, p.clothElasticity);
         world.addConstraint(constraint);
         constraints.push(constraint);
     }
@@ -149,7 +151,7 @@ export function sketch() {
 
             const hangingPosition = new CANNON.Vec3(
                 (x - Nx * 0.5) * restDistanceX,
-                p.floor + cHeight + 4,
+                p.floor + cHeight,
                 (y - Ny * 0.5) * restDistanceY
             )
 
@@ -157,6 +159,7 @@ export function sketch() {
                 mass: mass,
                 // mass: y === Ny ? 0 : mass, // line
                 // mass: y >= Ny - 2 && x >= Nx - 2 || y >= Ny - 2 && x <= 2 ? 0 : mass, // arms
+                // mass: y >= Ny - 2 && x >= Nx - 2 ? 0 : mass, // 1 arm
                 // mass: y >= Ny - 2 && x >= Nx - 1 || y >= Ny - 2 && x <= 1 || y <= 2 && x <= 1 || y <= 2 && x >= Nx - 1 ? 0 : mass, // 4 arms
                 position: hangingPosition,
                 shape: new CANNON.Particle(),
@@ -166,6 +169,26 @@ export function sketch() {
 
             clothParticles[x].push(particle);
             world.addBody(particle);
+        }
+    }
+
+    // Salva le posizioni iniziali delle particelle
+    const initialParticlePositions = [];
+    for (let x = 0; x <= Nx; x++) {
+        initialParticlePositions.push([]);
+        for (let y = 0; y <= Ny; y++) {
+            const particle = clothParticles[x][y];
+            initialParticlePositions[x].push(particle.position.clone());
+        }
+    }
+
+    function resetClothPositions() {
+        for (let x = 0; x <= Nx; x++) {
+            for (let y = 0; y <= Ny; y++) {
+                const particle = clothParticles[x][y];
+                particle.position.copy(initialParticlePositions[x][y]);
+                particle.velocity.set(0, 0, 0); // Resetta anche la velocità delle particelle
+            }
         }
     }
 
@@ -183,40 +206,6 @@ export function sketch() {
         }
     }
 
-    // Aggiungi le corde elastiche
-    const anchorDistance = 2;
-    const anchorPoints = [
-        // new CANNON.Vec3(-cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
-        // new CANNON.Vec3(cWidth / 2, p.floor + anchorDistance, -cHeight / 2),
-        new CANNON.Vec3(cWidth / 2 + .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
-        new CANNON.Vec3(-cWidth / 2 - .2, p.floor + cHeight + 6 + anchorDistance, cHeight / 2),
-    ];
-
-    const anchorBodies = [];
-    anchorPoints.forEach((point) => {
-        const anchorBody = new CANNON.Body({
-            mass: 0,
-            position: point,
-            shape: new CANNON.Particle(),
-        });
-        anchorBodies.push(anchorBody);
-        world.addBody(anchorBody);
-    });
-
-    const cornerParticles = [
-        // clothParticles[0][0],
-        // clothParticles[Nx][0],
-        clothParticles[Nx][Ny],
-        clothParticles[0][Ny],
-    ];
-
-    cornerParticles.forEach((particle, index) => {
-        const anchorBody = anchorBodies[index];
-        const constraint = new CANNON.DistanceConstraint(particle, anchorBody, anchorDistance);
-        world.addConstraint(constraint);
-        constraints.push(constraint);
-    });
-
     // Initialize the vertices of the cloth
     const vertices = [];
     for (let x = 0; x <= Nx; x++) {
@@ -226,9 +215,9 @@ export function sketch() {
     }
     clothGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3));
 
-    const light = new THREE.DirectionalLight(0xffffff, 7)
-    light.position.set(0, 10, -5)
-    light.target.position.set(0, 2, 10)
+    const light = new THREE.DirectionalLight(0xffffff, 5)
+    light.position.set(0, 15, 0)
+    light.target.position.set(0, 2, 0)
     light.castShadow = true
     light.shadow.radius = 16
     light.shadow.camera.near = 2
@@ -257,7 +246,7 @@ export function sketch() {
     flowField = createFlowField(flowFieldSize, 0) // Inizializzazione del flowfield
     function createFlowField(size, offsetSpeed) {
         const flowField = []
-        const noiseFreq = 0.1 // Frequenza del rumore per il flowfield
+        const noiseFreq = 0.05 // Frequenza del rumore per il flowfield
 
         for (let y = 0; y < size; y++) {
             const row = []
@@ -265,12 +254,15 @@ export function sketch() {
                 const noiseX = noise3D(x * noiseFreq, offsetSpeed, y * noiseFreq);
                 const noiseY = noise3D(x * noiseFreq, y * noiseFreq, offsetSpeed);
 
-                const windDirection = new THREE.Vector3(- mouse.x, - mouse.y, 0).normalize();
-                const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-                // const vector = windDirection.multiplyScalar(windIntensity * p.windStrength);
-                const vector = new THREE.Vector3(-mouse.x + noiseX, 0, -mouse.y + noiseY).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
-
-                row.push(vector);
+                if (p.mouse) {
+                    const windDirection = new THREE.Vector3(- mouse.x, - mouse.y, 0).normalize();
+                    const windIntensity = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+                    const vector = new THREE.Vector3(-mouse.x + noiseX, mouse.y + noiseY, 0).normalize().multiplyScalar(p.windStrength + windIntensity * 2);
+                    row.push(vector)
+                } else {
+                    const vector = new THREE.Vector3(noiseX * .1, noiseY, 0).normalize().multiplyScalar(p.windStrength);
+                    row.push(vector);
+                }
             }
             flowField.push(row);
         }
@@ -283,11 +275,24 @@ export function sketch() {
     const stepsPerFrame = 2
     let lastCallTime
 
+    // let resetTimer;
+    const attractionStrength = 0.1; // Regola questa costante per controllare la forza di attrazione
+    const restitutionStrength = 0.1;
+    const maxDistance = 3; // Distanza massima per applicare la forza di attrazione
+
     const animate = () => {
         if (showStats) stats.begin();
 
         // ANIMATION
         if (!paused) {
+
+            // Resetta il panno ogni 5 secondi
+            // if (!resetTimer) {
+            //     resetTimer = setTimeout(() => {
+            //         resetClothPositions();
+            //         resetTimer = null;
+            //     }, 5000);
+            // }
 
             const t = performance.now() / 1000
 
@@ -325,6 +330,25 @@ export function sketch() {
                         const windForce = flowField[gridY][gridX].clone()
 
                         particle.applyForce(windForce);
+
+                        // Applica la forza di attrazione verso la posizione iniziale
+                        const initialPosition = initialParticlePositions[x][y];
+                        const displacement = new CANNON.Vec3();
+                        displacement.copy(initialPosition).vsub(particle.position);
+                        const distance = displacement.length();
+
+                        if (distance < maxDistance) {
+                            const attractionDirection = displacement.normalize();
+                            const attractionForce = attractionDirection.multScalar(attractionStrength * distance);
+                            particle.applyForce(attractionForce);
+                        }
+
+                        // Forza di restituzione XXX
+                        // const restitutionDirection = initialPosition.vsub(particle.position).normalize();
+                        // const restitutionForce = new CANNON.Vec3();
+                        // restitutionForce.copy(restitutionDirection);
+                        // restitutionForce.scale(restitutionStrength * distance, restitutionForce);
+                        //     particle.applyForce(restitutionForce);
                     }
                 }
             }
