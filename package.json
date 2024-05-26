@@ -8,7 +8,7 @@
     "three-subdivide": "^1.1.2"
   },
   "devDependencies": {
-    "vite": "^4.3.5",
-    "vite-plugin-dynamic-import": "^1.4.0"
+    "vite": "^4.5.3",
+    "vite-plugin-dynamic-import": "^1.5.0"
   }
 }
