@@ -2,9 +2,9 @@
 <html>
 <!--
       INTRO:
-      THIS IS "ORLANDO FURIOSO" BY ARISTOFANE
-      LAST YEAR TOOL/APP FOR "THE NUVOLE" IS HERE https://github.com/Fupete/three-sessions-2023-senigallia
-      TWO YEARS AGO TOOL/APP FOR "THE MACBETH" IS HERE https://github.com/Fupete/p5-sessions-2022-senigallia
+      THIS IS "INSEGUENDO ORLANDO" TOOL/APP FROM "ORLANDO FURIOSO" BY LUDOVICO ARIOSTO
+      LAST YEAR TOOL/APP FOR "THE NUVOLE" BY ARISTOFANE IS HERE https://github.com/Fupete/three-sessions-2023-senigallia
+      TWO YEARS AGO TOOL/APP FOR "THE MACBETH" BY SHAKESPEARE IS HERE https://github.com/Fupete/p5-sessions-2022-senigallia
 -->
 
 <head>
@@ -20,8 +20,11 @@
   <div id="loader" class="loader">
     <h1>The Orlando sessions </h1>
     <p>© 2023-24 - Daniele @Fupete and the course DEL-2024 at DESIGN.unirsm<br />
-    <a href="https://github.com/del-2024-unirsm">github.com/del-2023-unirsm</a> — <a href="https://github.com/fupete">github.com/fupete</a><br />
-    Educational purposes, MIT License, 2023-24, San Marino</p></p>
+      <a href="https://github.com/del-2024-unirsm">github.com/del-2023-unirsm</a> — <a
+        href="https://github.com/fupete">github.com/fupete</a><br />
+      Educational purposes, MIT License, 2023-24, San Marino
+    </p>
+    </p>
     <p id="loaderText"><br /><br /><strong>Loading textures... (⚠️ >XMB!)</strong><br /><br /><br /></p>
     <button id="loaderButton" type="button" style="display:none" onclick="global.initAudio()">START</button>
     <p>
@@ -29,15 +32,22 @@
       <code>RETURN</code>: reload/init current sketch<br />
       <code>F5</code>: toggle director mode (auto play/stop)<br /><br />
       <code>0–6</code>: change set of sketches<br />
-      <code>a-z</code>: change between available sketches on current set, sketch <code>a</code> is blank/black screen<br />
+      <code>a-z</code>: change between available sketches on current set, sketch <code>a</code> is blank/black
+      screen<br />
       <code>\</code>: toggle mouse cursor<br />
       <code>F6</code>: toggle fullscreen
     </p>
-    <p><small><strong>design.UNIRSM.SM - Openday 2024 edition</strong> | Soundtrack song "The Tides Of Land" by Borful Tang (Free Music Archive) License CC BY-NC-SA.</small></p>
+    <p><small><strong>design.UNIRSM.SM - Openday 2024 edition</strong> | Soundtrack song "The Tides Of Land" by Borful
+        Tang (Free Music Archive) License CC BY-NC-SA.</small></p>
   </div>
   <div id="canvas3D" class="canvas"></div>
   <div id="stats"></div>
   <div id="directorModeStatus"></div>
+
+  <!-- caustic video -->
+  <video id="video" crossorigin="anonymous" style="display: none;"
+    type="video/mp4" src="./assets/textures/video/caustics.mp4" controls="false" autoplay="true">
+  </video>
 </body>
 
 </html>

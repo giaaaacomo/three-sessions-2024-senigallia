@@ -1,27 +1,22 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+// EYE
 
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
-import { materialEmissive, metalness, texture } from 'three/examples/jsm/nodes/Nodes.js'
 
 
 
-let scene
+let scene, camera
 let geometry, groundGeom, groundMate
 let material, material2, mirrorMate
 let animation
 let onWindowResize
 let noise3D
 let controls
-let composer
-let renderPass
-let bloomPass
 let loaderGLTF
+let lightS, light, pointLight
+let eye, eye2, eye3
 
 export function sketch() {
     // console.log("Sketch launched")
@@ -64,7 +59,7 @@ export function sketch() {
     let shadowMapWidth = 2048, shadowMapHeight = 2048
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -100,7 +95,7 @@ export function sketch() {
         map: textures[1].texture,
         envMap: cubeTextures[0].texture,
         // side: THREE.DoubleSide,
-        combine: THREE.addOperation,
+        // combine: THREE.addOperation,
         reflectivity: 1,
         // flatShading: true,
         shininess: 100,
@@ -113,12 +108,10 @@ export function sketch() {
     //GLTFLoader
     //eye
     let gltfLoaded = false
-    let eye, eye2, eye3
-    let modelGroup;
 
     loaderGLTF = new GLTFLoader()
     loaderGLTF.load(
-        './assets/eye/scene.gltf',
+        './assets/models/eye/scene.gltf',
         (gltf) => {
 
             gltfLoaded = true
@@ -170,53 +163,8 @@ export function sketch() {
         }
     )
 
-
-    // POST-PROCESSING
-    composer = new EffectComposer(renderer)
-    renderPass = new RenderPass(scene, camera)
-    composer.addPass(renderPass)
-    //bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    //bloomPass.threshold = p.bloomThreshold
-    //bloomPass.strength = p.bloomStrength
-    //bloomPass.radius = p.bloomRadius
-    //composer.addPass(bloomPass)
-
-    // Planet cone
-    /*let planet
-    material = new THREE.MeshStandardMaterial({
-        color: 0xff99ff,
-        map: textures[0].texture,
-        roughness: 0,
-        metalness: 0
-    })
-    planet = new THREE.Mesh(geometry, material)
-    planet.rotation.z += Math.PI
-    planet.position.y = 0
-    planet.position.x = 0
-    planet.scale.set(p.planetScale, p.planetScale, p.planetScale)
-    planet.castShadow = true
-    planet.receiveShadow = true
-    // scene.add(planet)
-     
-    // Planet cone 2
-    let planet2
-    material2 = new THREE.MeshStandardMaterial({
-        color: 0xbb8833,
-        map: textures[0].texture,
-        roughness: 0,
-        metalness: 0
-    })
-    planet2 = new THREE.Mesh(geometry, material2)
-    // planet2.rotation.z += Math.PI
-    planet2.position.y = 0
-    planet2.position.x = 0
-    planet2.scale.set(p.planetScale, p.planetScale, p.planetScale)
-    planet2.castShadow = true
-    planet2.receiveShadow = true
-    // scene.add(planet2) */
-
     // LIGHTS
-    let lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
+    lightS = new THREE.SpotLight(0x999999, 1, 0, Math.PI / 5, 0.5)
     lightS.position.set(1, 2, 10)
     lightS.target.position.set(0, 0, 0)
     lightS.castShadow = true
@@ -227,7 +175,7 @@ export function sketch() {
     lightS.shadow.mapSize.height = shadowMapHeight
     scene.add(lightS)
 
-    const light = new THREE.DirectionalLight(0xffffff, .5)
+    light = new THREE.DirectionalLight(0xffffff, .5)
     light.position.set(0, 2, 10)
     light.target.position.clone(eye)
     // light.castShadow = true
@@ -237,9 +185,9 @@ export function sketch() {
     // light.target.position.set(-5, 0, 0)
     // light.castShadow = true
     // scene.add(light2)
-    const pointLight1 = new THREE.PointLight(0xffffff, 1)
-    pointLight1.position.set(0, 1, 2)
-    scene.add(pointLight1)
+    pointLight = new THREE.PointLight(0xffffff, 1)
+    pointLight.position.set(0, 1, 2)
+    scene.add(pointLight)
     // const pointLight = new THREE.PointLight(0xffffff, .5)
     // pointLight.position.set(20, 20, 20)
     // scene.add(pointLight)
@@ -293,7 +241,6 @@ export function sketch() {
 
         controls.update()
         renderer.render(scene, camera) // RENDER
-        composer.render() // POST-PROCESSING
         if (showStats) stats.end() // XXX
 
         animation = requestAnimationFrame(animate) // CIAK
@@ -308,8 +255,36 @@ export function dispose() {
     material?.dispose()
     material2?.dispose()
     noise3D = null
-    composer?.dispose()
-    renderPass?.dispose()
-    bloomPass?.dispose()
+    eye?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
+    eye2?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
+    eye3?.traverse((node) => {
+        if (node.isMesh) {
+            node.geometry.dispose();
+            node.material.dispose();
+        }
+    });
+    scene.traverse((child) => {
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+        if (child.material) {
+            child.material.dispose();
+        }
+    });
+    light?.dispose();
+    lightS?.dispose();
+    pointLight?.dispose();
+    camera = null;
+    // scene = null;
     window.removeEventListener('resize', onWindowResize)
 }
