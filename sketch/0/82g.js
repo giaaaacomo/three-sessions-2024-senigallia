@@ -10,20 +10,15 @@ let groundGeom
 let animation
 let onWindowResize
 let noise3D
-/* let renderer
-let clock; */
 // let gui
 let controls
 let loaderGLTF
 let mixer
 
-const mixers = [], objects = [];
-
-
 export function sketch() {
     // console.log("Sketch launched")
 
-    // PARAMETERS ------------------------------------------------------------------------------
+    // PARAMETERS
     const p = {
         // colors
         availableColorsHighlights: [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff],
@@ -71,22 +66,20 @@ export function sketch() {
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.minDistance = 5
-    controls.maxDistance = 45
+    controls.maxDistance = 15
     controls.maxPolarAngle = Math.PI / 2
     controls.minPolarAngle = Math.PI / 2 - 0.2
-    controls.maxAzimuthAngle = - Math.PI / 2 //limite per non andare dietro
+    controls.maxAzimuthAngle = - Math.PI / 2
     controls.minAzimuthAngle = Math.PI / 2
     controls.autoRotate = p.autoRotate
     controls.autoRotateSpeed = p.autoRotateSpeed
     controls.target = p.lookAtCenter
 
-    // SCENE ------------------------------------------------------------------------------
+    // SCENE
     scene = new THREE.Scene()
     scene.background = p.background
-    scene.fog = new THREE.Fog(scene.background, 1, 50)
-
-    // MATERIALI ------------------------------------------------------------------------------
-    //materiale omino
+    scene.fog = new THREE.Fog(scene.background, 10, 30)
+    // materials
     humanMate = new THREE.MeshStandardMaterial({
         color: p.background,
         roughness: 0.5,
@@ -94,7 +87,6 @@ export function sketch() {
         fog: true,
         flatShading: true,
     })
-    //materiale delle pareti
     groundMate = new THREE.MeshStandardMaterial({
         color: p.background,
         roughness: 1,
@@ -103,21 +95,8 @@ export function sketch() {
     })
 
 
-    //materiale emissivo della cornice
-    let emissiveMaterial = new THREE.MeshStandardMaterial({
-    emissive: 0xff0000, // Colore rosso
-    emissiveIntensity: 200, // Intensità della luce emissiva
-    roughness: 0.5,
-    metalness: 0,
-    fog: true,
-    flatShading: true
-    });
-
-// GEOMETRIES ------------------------------------------------------------------------------
-
-
-    
-    // let's make a ground PIANO
+    // GEOMETRIES
+    // let's make a ground
     groundGeom = new THREE.PlaneGeometry(20, 20)
     let ground = new THREE.Mesh(groundGeom, groundMate)
     ground.position.set(0, p.floor, 0)
@@ -127,208 +106,92 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-   
-// Creazione del piano con buco rettangolare
-const width = 18;
-const height = 8;
-const holeWidth = 3;
-const holeHeight = 4;
-
-// Creazione della forma principale
-const shape = new THREE.Shape();
-shape.moveTo(-width / 2, -height / 2);
-shape.lineTo(width / 2, -height / 2);
-shape.lineTo(width / 2, height / 2);
-shape.lineTo(-width / 2, height / 2);
-shape.lineTo(-width / 2, -height / 2);
-
-// Creazione del buco rettangolare
-const hole = new THREE.Path();
-hole.moveTo(-holeWidth / 2, -holeHeight / 2);
-hole.lineTo(holeWidth / 2, -holeHeight / 2);
-hole.lineTo(holeWidth / 2, holeHeight / 2);
-hole.lineTo(-holeWidth / 2, holeHeight / 2);
-hole.lineTo(-holeWidth / 2, -holeHeight / 2);
-
-shape.holes.push(hole);
-
-// Creazione della geometria e del materiale
-const newgeometry = new THREE.ShapeGeometry(shape);
-const newmaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
-const plane = new THREE.Mesh(newgeometry, newmaterial);
-
-scene.add(plane);
-
-// Creazione del perimetro luminoso per il buco
-const holeShape = new THREE.Shape();
-holeShape.moveTo(-holeWidth / 2, -holeHeight / 2);
-holeShape.lineTo(holeWidth / 2, -holeHeight / 2);
-holeShape.lineTo(holeWidth / 2, holeHeight / 2);
-holeShape.lineTo(-holeWidth / 2, holeHeight / 2);
-holeShape.lineTo(-holeWidth / 2, -holeHeight / 2);
-
-const holeGeometry = new THREE.ShapeGeometry(holeShape);
-const emissivetrialMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 200});
-const holeMesh = new THREE.Mesh(holeGeometry, emissivetrialMaterial);
-
-// Posiziona il perimetro del buco in modo che si sovrapponga al buco del piano
-holeMesh.position.z = 0.01;
-plane.position.z=8;
-plane.position.y=2;
-
-plane.add(holeMesh);
-
-// Let's load our low poly human
-    // GLTFLoader
+    // Let's load our low poly human
+    //GLTFLoader
     let gltfLoaded = false
     let human
     loaderGLTF = new GLTFLoader()
     loaderGLTF.load(
-    // resource URL
-    './assets/models/Orlando_NLA_threejs.glb',
-    // called when the resource is loaded
-    (gltf) => {
-        human = gltf.scene
-
-        // Regola la scala dell'omino
-        const scale = 0.85; // Scala desiderata
-        human.scale.set(scale, scale, scale);
-
-        // Posizione desiderata
-        const positionX = 0; // Posizione lungo l'asse X
-        const positionY = p.floor; // Posizione lungo l'asse Y (sul pavimento)
-        const positionZ = 5; // Posizione lungo l'asse Z
-
-        // Applica la posizione
-        human.position.set(positionX, positionY, positionZ);
-
-        // Regola la rotazione dell'omino
-        const rotationY = Math.PI; // Rotazione attorno all'asse Y
-        human.rotation.y = rotationY;
-
-        // Abilita le ombre sull'omino
-        human.traverse((node) => {
-            if (node.isMesh) {
-                node.castShadow = true;
-                node.receiveShadow = true;
-            }
-        });
-
-        // Animazioni
-        mixer = new THREE.AnimationMixer(human);
-        let action = mixer.clipAction(gltf.animations[0]);
-        action.play();
-
-        // Aggiungi l'omino alla scena
-        scene.add(human);
-
-        // Indica che il modello è stato caricato
-        gltfLoaded = true;
-    },
-    (xhr) => {
-        // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
-    },
-    (error) => {
-        // console.log('An error happened loading the GLTF scene')
-    }
-)
-
-    
-   
-// GLTFLoader DELLA SCENA DA BLENDER - M
-let gltfLoaded2 = false;
-let pannelli;
-let pannelliPosition = { x: 0, y: -1, z: 3.5 }; // Posizione iniziale dell'elemento
-let pannelliRotation = Math.PI; // Rotazione iniziale attorno all'asse Y
-
-loaderGLTF.load(
-    './assets/models/scena_tarot.gltf',
-    (gltf) => {
-        pannelli = gltf.scene;
-
-        // Ruota l'elemento di 180 gradi attorno all'asse Y per correggere l'import 
-      /*  pannelli.rotation.y = pannelliRotation;
-        // Imposta la posizione iniziale dell'elemento
-        pannelli.position.set(pannelliPosition.x, pannelliPosition.y, pannelliPosition.z);
-        // Crea i materiali
-        const whiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const redEmissiveMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0xff0000,
-            emissive: 0xff0000,
-            emissiveIntensity: 500
-        });
-        // Assegna i materiali alle mesh 
-        pannelli.traverse((node) => {
-            if (node.isMesh) {
-                if (node.name === 'bordo') {
-                    node.material = redEmissiveMaterial;
-                } else {
-                    node.material = groundMate;
+        // resource URL
+        './assets/models/Orlando_NLA_threejs.gltf',
+        // called when the resource is loaded
+        (gltf) => {
+            // gltf.animations // Array<THREE.AnimationClip>
+            // gltf.scene.scale.set(0.075, 0.075, 0.075)
+            // gltf.scene.position.x = -0.85
+            // gltf.scene.position.y = 3.35
+            // gltf.scene // THREE.Group
+            // gltf.scenes // Array<THREE.Group>
+            // gltf.asset // Object
+            // gltf.scene.children[0].material = material XXX
+            human = gltf.scene
+            // human.scale.set(1.5, 1.5, 1.5)
+            const box = new THREE.Box3().setFromObject(human);
+            const size = box.getSize(new THREE.Vector3());
+            human.traverse((node) => {
+                if (node.isMesh) {
+                    node.material = humanMate
+                    node.castShadow = true
+                    node.receiveShadow = true
                 }
-                // Abilita le ombre per ogni mesh
-                node.castShadow = true;
-                node.receiveShadow = true;
-            }
-        });
-        // Aggiungi l'elemento alla scena
-        scene.add(pannelli); */
-        // Indica che il modello è stato caricato
+            })
+            human.position.y = p.floor + size.y / 2 - 0.5
+            human.position.z = 2
+            human.rotation.y = Math.PI
+            // animations
+            mixer = new THREE.AnimationMixer(human)
+
+            let action = mixer.clipAction(gltf.animations[2])
+                action.play()
+
+                
+           /* for (let i = 0; i < gltf.animations.length; i++) {
+                let action = mixer.clipAction(gltf.animations[i])
+                action.play()
+            } */
+            //
+            scene.add(human)
+            // console.log(human)
+            // let humanMat = human.children[0].material
+            // console.log(humanMat)
+            gltfLoaded = true
+        },
+        (xhr) => {
+            // console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+        },
+        (error) => {
+            // console.log('An error happened loading the GLTF scene')
+        }
+    )
 
 
-        gltfLoaded2 = true;
-    },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    },
-    (error) => {
-        console.error('An error happened loading the GLTF scene', error);
-    }
-);
+    // LIGHTS
 
-
-
-
-    // LIGHTS ------------------------------------------------------------------------------
-
-    //  RECT LIGHT TRA I DUE MURI per luce indiretta
+    // big rect
     RectAreaLightUniformsLib.init();
-    // Variabili per la RectAreaLight
-    let rectLightWidth = 2;
-    let rectLightHeight = 5.5;
-    let rectLightIntensity = 15;
-    let rectLightColor = 0xffffff;
-    let rectLightXPosition = 6; // Spostamento a sinistra
-    let rectLightYPosition = 3; // in altezza
-    let rectLightZPosition = 9.5;
-    let rectLightRotationY = Math.PI / 2; // Rotazione 
-    // Creazione della RectAreaLight
-    const rectLight = new THREE.RectAreaLight(rectLightColor, rectLightIntensity, rectLightWidth, rectLightHeight);
-    rectLight.position.set(rectLightXPosition, rectLightYPosition, rectLightZPosition);
-    rectLight.rotation.y = rectLightRotationY; // Applicazione della rotazione
-        // Aggiungi la RectAreaLight alla scena
-    scene.add(rectLight);
-    // Aggiungi il RectAreaLightHelper per visualizzare l'area della luce
-    const rectLightHelper = new RectAreaLightHelper(rectLight);
-    rectLight.add(rectLightHelper);
-    
+    let rectLightWidth = 4
+    let rectLightHeight = 5.5
+    let rectLightIntensity = 5
+    const rectLight = new THREE.RectAreaLight(p.availableColorsHighlights[whichColor], rectLightIntensity, rectLightWidth, rectLightHeight)
+    rectLight.position.set(0, p.floor + rectLightHeight / 2, 10)
+    scene.add(rectLight)
+    const rectLightHelper = new RectAreaLightHelper(rectLight)
+    rectLight.add(rectLightHelper)
 
 
-    const lightScale = 1; // Scala per la luce direzionale
-
-    //DIRECTIONAL LIGHT
-    const light = new THREE.DirectionalLight(0xffffff, .1); //colore , posizione
-    light.position.set(0 * lightScale, 2 * lightScale, 7 * lightScale); // Moltiplica per la scala
-    light.castShadow = true;
-    light.shadow.radius = 8;
-    light.shadow.camera.near = 2;
-    light.shadow.camera.far = 200;
-    light.shadow.bias = 0.0001;
-    light.shadow.mapSize.width = shadowMapWidth;
-    light.shadow.mapSize.height = shadowMapHeight;
-    scene.add(light);
-
-    const lightHelper = new THREE.DirectionalLightHelper(light, 5);
-    scene.add(lightHelper);
+    const light = new THREE.DirectionalLight(0xffffff, .4)
+    light.position.set(0, 2, 10)
+    // light.target = cube
+    light.castShadow = true
+    light.shadow.radius = 8
+    light.shadow.camera.near = 2
+    light.shadow.camera.far = 200
+    light.shadow.bias = 0.0001
+    light.shadow.mapSize.width = shadowMapWidth
+    light.shadow.mapSize.height = shadowMapHeight
+    scene.add(light)
+    // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
+    // scene.add(lightHelper);
 
     // GUI
     // gui = new GUI.GUI()
