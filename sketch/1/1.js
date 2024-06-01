@@ -1,14 +1,17 @@
+// MIRROR/CASLTLE - PRIMER
+
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 
 import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 
-let scene
+let scene, camera
 let groundMate, mirrorMate
 let groundGeom, stepSideGeom, reflectorBackGeom
+const ramps = []
 let mirrorBack // reflector
-let animation
+let animation, light, lightD
 let onWindowResize
 let noise3D
 // let gui
@@ -41,7 +44,7 @@ export function sketch() {
     let shadowMapWidth = 2048, shadowMapHeight = 2048
 
     // CAMERA
-    let camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
+    camera = new THREE.PerspectiveCamera(p.camera, window.innerWidth / window.innerHeight, near, far)
     camera.position.copy(p.cameraPosition)
     camera.lookAt(p.lookAtCenter)
 
@@ -77,7 +80,7 @@ export function sketch() {
         color: 0x444444,
         envMap: cubeTextures[0].texture,
         side: THREE.DoubleSide,
-        combine: THREE.addOperation,
+        // combine: THREE.addOperation,
         reflectivity: 1,
         // specular: 0x999999,
         fog: true
@@ -130,7 +133,6 @@ export function sketch() {
 
     let minSteps = 5
     let maxStepsDelta = 10
-    const ramps = []
     for (let r = 0; r < 3; r++) {
         const steps = new THREE.Group
         const rampSteps = minSteps + Math.random() * maxStepsDelta
@@ -168,7 +170,7 @@ export function sketch() {
     ground.receiveShadow = true
     scene.add(ground)
 
-    const light = new THREE.DirectionalLight(0xffffff, 10)
+    light = new THREE.DirectionalLight(0xffffff, 10)
     light.position.set(0, 2, -5)
     // light.target = cube
     light.castShadow = true
@@ -182,7 +184,7 @@ export function sketch() {
     // const lightHelper = new THREE.DirectionalLightHelper(light, 5);
     // scene.add(lightHelper);
 
-    const lightD = new THREE.DirectionalLight(0xffffff, 1)
+    lightD = new THREE.DirectionalLight(0xffffff, 1)
     light.position.set(0, 3, -3)
     light.target.position.set(0, 0, 0)
     scene.add(lightD)
@@ -239,6 +241,20 @@ export function dispose() {
     mirrorMate?.dispose()
     mirrorBack?.dispose()
     noise3D = null
+    ramps.forEach(ramp => scene.remove(ramp))
+    ramps.length = 0
+    scene.traverse((child) => {
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+        if (child.material) {
+            child.material.dispose();
+        }
+    });
+    light?.dispose()
+    lightD?.dispose()
+    // scene = null;
+    camera = null;
     // gui?.destroy()
     // ...
     window.removeEventListener('resize', onWindowResize)
