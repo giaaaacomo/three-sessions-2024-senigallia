@@ -839,7 +839,7 @@ export function sketch() {
             const view = views[i];
             const camera = view.camera;
 
-            view.updateCamera(camera, scene);
+            
 
             const left = Math.floor(windowWidth * view.left);
             const bottom = Math.floor(windowHeight * view.bottom);
@@ -853,7 +853,7 @@ export function sketch() {
 
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
-
+            view.updateCamera(camera, scene);
             renderer.render(scene, camera);
         }
 
